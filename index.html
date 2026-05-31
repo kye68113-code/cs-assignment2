@@ -110,7 +110,7 @@ margin-top:20px;
 <h2>📅 내일 아침 스케줄</h2>
 <div id="result"></div>
 <button onclick="showPage('p2')">수정하기</button>
-<button onclick="showPage('p1')">처음부터</button>
+<button onclick="resetPlanner()">처음부터</button>
 </div>
 
 </div>
@@ -147,6 +147,17 @@ v%=1440;
 const h=Math.floor(v/60);
 const m=v%60;
 return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
+function resetPlanner(){
+
+    document.querySelectorAll('input').forEach(input=>{
+        input.value='';
+    });
+
+    document.getElementById('result').innerHTML='';
+
+    showPage('p1');
 }
 
 function calculate(){
