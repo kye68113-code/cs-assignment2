@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내일 아침 플래너 최종본</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+body{
+font-family:'Noto Sans KR',sans-serif;
+background:linear-gradient(135deg,#0f172a,#172554,#1e3a8a);
+color:#eef2ff;margin:0;padding:20px;
+}
+.card{
+max-width:950px;margin:auto;
+background:rgba(15,23,42,.94);
+padding:25px;border-radius:24px;
+}
+.page{display:none}
+.page.active{display:block}
+label{display:block;margin-top:14px;font-weight:700}
+.help{font-size:13px;color:#cbd5e1;margin-top:4px}
+input{
+width:100%;box-sizing:border-box;
+padding:12px;margin-top:5px;
+background:#1e293b;color:white;
+border:1px solid #475569;border-radius:12px;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{
+-webkit-appearance:none;margin:0;
+}
+button{
+padding:12px 18px;border:none;border-radius:12px;
+background:#2563eb;color:white;cursor:pointer;
+margin-top:15px;margin-right:8px;
+}
+.wakeup{
+font-size:42px;font-weight:700;
+text-align:center;
+background:#1d4ed8;
+padding:20px;border-radius:18px;
+margin:20px 0;
+}
+.timeline{
+border-left:4px solid #60a5fa;
+padding-left:15px;
+margin-top:20px;
+}
+.timeline div{margin:10px 0}
+</style>
+</head>
+<body>
+<div class="card">
+
+<div id="p1" class="page active">
+<h1>🚌 내일 아침 플래너</h1>
+
+<label>🎯 도착 희망 시간</label>
+<div class="help">내일 목적지에 도착하고 싶은 시간을 입력하세요.</div>
+<input type="time" id="arrival">
+
+<label>🚌 첫차 출발 시간</label>
+<div class="help">버스 차고지에서 첫차가 출발하는 시간입니다.</div>
+<input type="time" id="firstBus">
+
+<label>⏱️ 배차 간격 (분)</label>
+<input type="number" min="0" id="interval">
+
+<label>🚏 차고지에서 내 탑승 정류장까지의 정류장 수</label>
+<input type="number" min="0" id="stops">
+
+<label>⌛ 정류장 1개 이동 시간 (분)</label>
+<input type="number" min="0" id="stopTime">
+
+<button onclick="goPage2()">다음</button>
+</div>
+
+<div id="p2" class="page">
+<h2>📋 아침 준비 정보</h2>
+
+<label>🚿 세면 및 샤워 시간 (분)</label>
+<input type="number" min="0" id="wash">
+
+<label>🍳 아침 식사 시간 (분)</label>
+<input type="number" min="0" id="meal">
+
+<label>👕 옷 입기 등 외출 준비 시간 (분)</label>
+<input type="number" min="0" id="dress">
+
+<label>🚶 집에서 탑승 정류장까지 걸리는 시간 (분)</label>
+<input type="number" min="0" id="walk">
+
+<label>🚶 하차 정류장에서 목적지까지 걸리는 시간 (분)</label>
+<input type="number" min="0" id="destWalk">
+
+<label>🚌 버스 이동 시간 (분)</label>
+<input type="number" min="0" id="busTravel">
+
+<div class="help">또는 아래 정류장 수를 입력하면 자동 계산됩니다.</div>
+
+<label>🚏 탑승 후 목적지까지 지나가는 정류장 수</label>
+<input type="number" min="0" id="rideStops">
+
+<button onclick="showPage('p1')">이전</button>
+<button onclick="calculate()">스케줄 생성</button>
+</div>
+
+<div id="p3" class="page">
+<h2>📅 내일 아침 스케줄</h2>
+<div id="result"></div>
+<button onclick="showPage('p2')">수정하기</button>
+<button onclick="showPage('p1')">처음부터</button>
+</div>
+
+</div>
+
+<script>
+document.querySelectorAll('input[type=number]').forEach(el=>{
+el.addEventListener('wheel',()=>el.blur());
+});
+
+function showPage(id){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+
+function goPage2(){
+const ids=['arrival','firstBus','interval','stops','stopTime'];
+for(const id of ids){
+if(document.getElementById(id).value===''){
+alert('모든 항목을 입력해주세요.');
+return;
+}
+}
+showPage('p2');
+}
+
+function t2m(t){
+const [h,m]=t.split(':').map(Number);
+return h*60+m;
+}
+
+function fmt(v){
+while(v<0)v+=1440;
+v%=1440;
+const h=Math.floor(v/60);
+const m=v%60;
+return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
+function calculate(){
+try{
+
+const required=['wash','meal','dress','walk','destWalk'];
+for(const id of required){
+if(document.getElementById(id).value===''){
+alert('준비 시간을 모두 입력해주세요.');
+return;
+}
+}
+
+const stopTime=Number(document.getElementById('stopTime').value);
+
+let moveTime=0;
+
+if(document.getElementById('busTravel').value!==''){
+moveTime=Number(document.getElementById('busTravel').value);
+}else if(document.getElementById('rideStops').value!==''){
+moveTime=Number(document.getElementById('rideStops').value)*stopTime;
+}else{
+alert('버스 이동 시간 또는 지나가는 정류장 수를 입력해주세요.');
+return;
+}
+
+const arrival=t2m(document.getElementById('arrival').value);
+const first=t2m(document.getElementById('firstBus').value);
+const interval=Number(document.getElementById('interval').value);
+const stops=Number(document.getElementById('stops').value);
+
+let busArrivalAtStop=first+(stops*stopTime);
+
+const latestPossibleBus=arrival-moveTime-
+Number(document.getElementById('destWalk').value);
+
+let selectedBus=busArrivalAtStop;
+
+while(selectedBus+interval<=latestPossibleBus){
+selectedBus+=interval;
+}
+
+const leaveHome=selectedBus-
+Number(document.getElementById('walk').value);
+
+const prepStart=leaveHome-
+Number(document.getElementById('dress').value);
+
+const mealStart=prepStart-
+Number(document.getElementById('meal').value);
+
+const wakeTime=mealStart-
+Number(document.getElementById('wash').value);
+
+document.getElementById('result').innerHTML=`
+<div class="wakeup">
+⏰ 추천 기상 시간<br>
+${fmt(wakeTime)}
+</div>
+
+<p><b>🎯 도착 희망 시간:</b> ${fmt(arrival)}</p>
+<p><b>🚌 탑승 예정 버스 시간:</b> ${fmt(selectedBus)}</p>
+<p><b>📍 예상 목적지 도착 시간:</b> ${fmt(selectedBus+moveTime+Number(document.getElementById('destWalk').value))}</p>
+
+<div class="timeline">
+<div>🌅 ${fmt(wakeTime)} 기상</div>
+<div>🚿 ${fmt(wakeTime)} ~ ${fmt(mealStart)} 세면 및 샤워</div>
+<div>🍳 ${fmt(mealStart)} ~ ${fmt(prepStart)} 아침 식사</div>
+<div>👕 ${fmt(prepStart)} ~ ${fmt(leaveHome)} 외출 준비</div>
+<div>🚶 ${fmt(leaveHome)} 집 출발</div>
+<div>🚌 ${fmt(selectedBus)} 버스 탑승</div>
+<div>📍 ${fmt(selectedBus+moveTime+Number(document.getElementById('destWalk').value))} 목적지 도착</div>
+</div>
+`;
+
+showPage('p3');
+
+}catch(e){
+alert('오류 발생: '+e.message);
+}
+}
+</script>
+</body>
+</html>
